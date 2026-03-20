@@ -45,6 +45,8 @@ Either way, a window will open.
 | **Live log** | Scrollable log panel showing progress, file sizes, and any ffmpeg errors |
 | **Progress bar** | Visual chapter-by-chapter progress |
 | **Cancel** | Abort mid-conversion at any time |
+| **Open Folder** | Button appears after conversion completes to open the output directory in Finder |
+| **Persistent settings** | Bitrate, sample rate, channels, and rate mode are saved between sessions |
 
 ## Output
 

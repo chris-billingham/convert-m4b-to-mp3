@@ -64,12 +64,12 @@ class M4BtoMP3App:
         # Bitrate
         ttk.Label(settings, text="Bitrate:").grid(row=0, column=0, sticky="w", padx=(0, 4))
         self.bitrate_var = tk.StringVar(value="128k")
-        bitrate_combo = ttk.Combobox(
+        self.bitrate_combo = ttk.Combobox(
             settings, textvariable=self.bitrate_var, width=10,
             values=["64k", "96k", "128k", "160k", "192k", "224k", "256k", "320k"],
             state="readonly",
         )
-        bitrate_combo.grid(row=0, column=1, sticky="w")
+        self.bitrate_combo.grid(row=0, column=1, sticky="w")
 
         # Sample rate
         ttk.Label(settings, text="Sample Rate:").grid(row=0, column=2, sticky="w", padx=(16, 4))
@@ -100,6 +100,7 @@ class M4BtoMP3App:
             state="readonly",
         )
         rm_combo.grid(row=1, column=3, sticky="w", pady=(6, 0))
+        self.ratemode_var.trace_add("write", self._on_ratemode_change)
 
         # Filename prefix
         ttk.Label(settings, text="File Prefix:").grid(row=2, column=0, sticky="w", padx=(0, 4), pady=(6, 0))
@@ -120,6 +121,8 @@ class M4BtoMP3App:
         self.convert_btn.pack(side=tk.LEFT)
         self.cancel_btn = ttk.Button(btn_row, text="Cancel", command=self.cancel_convert, state=tk.DISABLED)
         self.cancel_btn.pack(side=tk.LEFT, padx=(8, 0))
+        self.open_btn = ttk.Button(btn_row, text="Open Folder", command=self.open_output, state=tk.DISABLED)
+        self.open_btn.pack(side=tk.LEFT, padx=(8, 0))
         self.progress = ttk.Progressbar(btn_row, mode="determinate", length=200)
         self.progress.pack(side=tk.RIGHT)
 
@@ -127,6 +130,9 @@ class M4BtoMP3App:
         ttk.Label(main, text="Log", style="Header.TLabel").pack(anchor="w", **pad)
         self.log = scrolledtext.ScrolledText(main, height=14, state=tk.DISABLED, font=("Menlo", 11), wrap=tk.WORD)
         self.log.pack(fill=tk.BOTH, expand=True, **pad)
+
+        self.load_settings()
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     # ── helpers ──
 
@@ -153,11 +159,51 @@ class M4BtoMP3App:
         if path:
             self.output_var.set(path)
 
+    def _on_ratemode_change(self, *_):
+        if self.ratemode_var.get() == "CBR":
+            self.bitrate_combo.configure(state="readonly")
+        else:
+            self.bitrate_combo.configure(state="disabled")
+
+    def open_output(self):
+        path = self.output_var.get().strip()
+        if path:
+            subprocess.run(["open", path])
+
+    _settings_path = os.path.expanduser("~/.config/m4b_to_mp3/settings.json")
+
+    def load_settings(self):
+        try:
+            with open(self._settings_path) as f:
+                s = json.load(f)
+            self.bitrate_var.set(s.get("bitrate", "128k"))
+            self.samplerate_var.set(s.get("samplerate", "44100"))
+            self.channels_var.set(s.get("channels", "Stereo"))
+            self.ratemode_var.set(s.get("ratemode", "CBR"))
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            pass
+
+    def save_settings(self):
+        os.makedirs(os.path.dirname(self._settings_path), exist_ok=True)
+        with open(self._settings_path, "w") as f:
+            json.dump({
+                "bitrate": self.bitrate_var.get(),
+                "samplerate": self.samplerate_var.get(),
+                "channels": self.channels_var.get(),
+                "ratemode": self.ratemode_var.get(),
+            }, f)
+
+    def _on_close(self):
+        self.save_settings()
+        self.root.destroy()
+
     def set_ui_state(self, converting):
         self.converting = converting
         state = tk.DISABLED if converting else tk.NORMAL
         self.convert_btn.configure(state=state)
         self.cancel_btn.configure(state=tk.NORMAL if converting else tk.DISABLED)
+        if converting:
+            self.open_btn.configure(state=tk.DISABLED)
 
     # ── ffmpeg helpers ──
 
@@ -178,13 +224,18 @@ class M4BtoMP3App:
             "-show_chapters", "-show_format", input_path,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
-        data = json.loads(result.stdout)
+        if result.returncode != 0:
+            raise RuntimeError(f"ffprobe failed:\n{result.stderr.strip()}")
+        try:
+            data = json.loads(result.stdout)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"ffprobe returned unexpected output: {e}")
         chapters = data.get("chapters", [])
         return chapters, data.get("format", {})
 
     def build_ffmpeg_args(self, ffmpeg, input_path, output_path, start, end):
         """Build the ffmpeg command for one chapter."""
-        args = [ffmpeg, "-y", "-i", input_path, "-ss", str(start), "-to", str(end)]
+        args = [ffmpeg, "-y", "-ss", str(start), "-t", str(end - start), "-i", input_path]
 
         # Codec
         args += ["-codec:a", "libmp3lame"]
@@ -294,6 +345,7 @@ class M4BtoMP3App:
                 set_progress((i + 1) / total * 100)
 
             log(f"\n🎉 Done! {total} file(s) written to:\n  {output_dir}")
+            self.root.after(0, lambda: self.open_btn.configure(state=tk.NORMAL))
 
         except FileNotFoundError:
             log("❌ ffmpeg/ffprobe not found. Install with:  brew install ffmpeg")
