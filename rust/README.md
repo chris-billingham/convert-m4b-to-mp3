@@ -1,6 +1,6 @@
 # M4B → MP3 Chapter Splitter (Rust)
 
-A native Mac GUI app built with Rust + [egui](https://github.com/emilk/egui) that converts `.m4b` audiobook files into chapter-split `.mp3` files.
+A native Mac GUI app built with Rust + [egui](https://github.com/emilk/egui) that converts `.m4b` (and `.m4a`) audiobook files into chapter-split `.mp3` files.
 
 ## Prerequisites
 
@@ -31,13 +31,15 @@ The release binary lands in `target/release/m4b2mp3` — you can copy it anywher
 | Feature | Details |
 |---|---|
 | **Chapter splitting** | Reads embedded chapter metadata via `ffprobe`; falls back to single-file conversion if none found |
-| **Bitrate** | 64k – 320k CBR, or VBR quality levels q0 – q9 |
-| **Sample rate** | 22050 / 44100 / 48000 Hz |
-| **Channels** | Mono or Stereo |
-| **File prefix** | Customisable output filename prefix |
+| **Bitrate** | 64k – 320k CBR (default: 128k), or VBR quality levels q0, q2, q4, q6, q9 |
+| **Sample rate** | 22050 / 44100 / 48000 Hz (default: 44100) |
+| **Channels** | Mono or Stereo (default: Stereo) |
+| **File prefix** | Customisable output filename prefix (defaults to the input filename). Non-alphanumeric characters are replaced with `_`. |
 | **Live log** | Scrollable monospace log with auto-scroll |
 | **Progress bar** | Visual chapter-by-chapter progress with percentage |
 | **Cancel** | Abort mid-conversion |
+| **Open Folder** | Button appears after conversion completes to open the output directory in Finder |
+| **Persistent settings** | Bitrate, sample rate, channels, and rate mode are saved between sessions |
 | **Native file dialogs** | Uses `rfd` for macOS-native open/save panels |
 
 ## Output
@@ -56,7 +58,7 @@ ID3v2 metadata (artist, album, etc.) is passed through from the source file.
 ├── Cargo.toml
 ├── README.md
 └── src/
-    └── main.rs      # ~380 lines — GUI + conversion logic
+    └── main.rs      # ~630 lines — GUI + conversion logic
 ```
 
 ## Dependencies

@@ -44,6 +44,7 @@ struct ConversionState {
 struct ConversionInner {
     running: bool,
     cancelled: bool,
+    conversion_done: bool,
     log: Vec<String>,
     progress: f32, // 0.0 – 1.0
 }
@@ -54,6 +55,7 @@ impl ConversionState {
             inner: Arc::new(Mutex::new(ConversionInner {
                 running: false,
                 cancelled: false,
+                conversion_done: false,
                 log: Vec::new(),
                 progress: 0.0,
             })),
@@ -90,6 +92,16 @@ impl ConversionState {
             s.cancelled = true;
         }
     }
+
+    fn set_conversion_done(&self, v: bool) {
+        if let Ok(mut s) = self.inner.lock() {
+            s.conversion_done = v;
+        }
+    }
+
+    fn is_conversion_done(&self) -> bool {
+        self.inner.lock().map(|s| s.conversion_done).unwrap_or(false)
+    }
 }
 
 // ─── Settings enums ─────────────────────────────────────────────────────────
@@ -122,16 +134,22 @@ struct App {
     log_auto_scroll: bool,
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        let load = |key: &str, default: usize| -> usize {
+            cc.storage
+                .and_then(|s| s.get_string(key))
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(default)
+        };
         Self {
             input_path: String::new(),
             output_dir: String::new(),
             prefix: String::new(),
-            bitrate_idx: 2,     // 128k
-            samplerate_idx: 1,  // 44100
-            channels_idx: 1,    // Stereo
-            ratemode_idx: 0,    // CBR
+            bitrate_idx: load("bitrate_idx", 2),       // default 128k
+            samplerate_idx: load("samplerate_idx", 1), // default 44100
+            channels_idx: load("channels_idx", 1),     // default Stereo
+            ratemode_idx: load("ratemode_idx", 0),     // default CBR
             state: ConversionState::new(),
             log_auto_scroll: true,
         }
@@ -139,6 +157,13 @@ impl Default for App {
 }
 
 impl eframe::App for App {
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        storage.set_string("bitrate_idx", self.bitrate_idx.to_string());
+        storage.set_string("samplerate_idx", self.samplerate_idx.to_string());
+        storage.set_string("channels_idx", self.channels_idx.to_string());
+        storage.set_string("ratemode_idx", self.ratemode_idx.to_string());
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Repaint continuously while converting so log + progress update
         if self.state.inner.lock().map(|s| s.running).unwrap_or(false) {
@@ -206,14 +231,17 @@ impl eframe::App for App {
                     .spacing([16.0, 6.0])
                     .show(ui, |ui| {
                         // Row 1
+                        let is_cbr = self.ratemode_idx == 0;
                         ui.label("Bitrate:");
-                        egui::ComboBox::from_id_salt("bitrate")
-                            .selected_text(BITRATES[self.bitrate_idx])
-                            .show_ui(ui, |ui| {
-                                for (i, b) in BITRATES.iter().enumerate() {
-                                    ui.selectable_value(&mut self.bitrate_idx, i, *b);
-                                }
-                            });
+                        ui.add_enabled_ui(is_cbr, |ui| {
+                            egui::ComboBox::from_id_salt("bitrate")
+                                .selected_text(BITRATES[self.bitrate_idx])
+                                .show_ui(ui, |ui| {
+                                    for (i, b) in BITRATES.iter().enumerate() {
+                                        ui.selectable_value(&mut self.bitrate_idx, i, *b);
+                                    }
+                                });
+                        });
 
                         ui.label("Sample Rate:");
                         egui::ComboBox::from_id_salt("samplerate")
@@ -261,6 +289,8 @@ impl eframe::App for App {
             // ── Buttons + progress ──────────────────────────────────────
             let is_running = self.state.inner.lock().map(|s| s.running).unwrap_or(false);
 
+            let conversion_done = self.state.is_conversion_done();
+
             ui.horizontal(|ui| {
                 ui.add_enabled_ui(!is_running, |ui| {
                     if ui
@@ -274,6 +304,14 @@ impl eframe::App for App {
                 ui.add_enabled_ui(is_running, |ui| {
                     if ui.button("Cancel").clicked() {
                         self.state.cancel();
+                    }
+                });
+
+                ui.add_enabled_ui(conversion_done && !is_running, |ui| {
+                    if ui.button("Open Folder").clicked() {
+                        let _ = std::process::Command::new("open")
+                            .arg(&self.output_dir)
+                            .spawn();
                     }
                 });
 
@@ -350,6 +388,7 @@ impl App {
 
         let state = self.state.clone();
         state.set_running(true);
+        state.set_conversion_done(false);
         // clear previous log
         if let Ok(mut s) = state.inner.lock() {
             s.log.clear();
@@ -428,6 +467,12 @@ fn run_conversion(
         }
     };
 
+    if !probe_out.status.success() {
+        let stderr = String::from_utf8_lossy(&probe_out.stderr);
+        state.log(&format!("❌ ffprobe failed:\n{}", stderr.trim()));
+        return;
+    }
+
     let probe: ProbeOutput = match serde_json::from_slice(&probe_out.stdout) {
         Ok(p) => p,
         Err(e) => {
@@ -489,12 +534,12 @@ fn run_conversion(
 
         let mut args: Vec<String> = vec![
             "-y".into(),
-            "-i".into(),
-            input.display().to_string(),
             "-ss".into(),
             format!("{}", start),
-            "-to".into(),
-            format!("{}", end),
+            "-t".into(),
+            format!("{}", end - start),
+            "-i".into(),
+            input.display().to_string(),
             "-codec:a".into(),
             "libmp3lame".into(),
         ];
@@ -562,6 +607,7 @@ fn run_conversion(
         total,
         output_dir.display()
     ));
+    state.set_conversion_done(true);
 }
 
 // ─── Entry point ────────────────────────────────────────────────────────────
@@ -577,6 +623,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "M4B → MP3 Chapter Splitter",
         options,
-        Box::new(|_cc| Ok(Box::new(App::default()))),
+        Box::new(|cc| Ok(Box::new(App::new(cc)))),
     )
 }
