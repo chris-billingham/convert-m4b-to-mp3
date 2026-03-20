@@ -1,0 +1,26 @@
+{
+  "": {
+    "swift-dependencies": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/master.swiftdeps"
+  },
+  "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/Sources/M4BtoMP3/ContentView.swift": {
+    "dependencies": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/ContentView.d",
+    "object": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/ContentView.swift.o",
+    "swiftmodule": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/ContentView~partial.swiftmodule",
+    "swift-dependencies": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/ContentView.swiftdeps",
+    "diagnostics": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/ContentView.dia"
+  },
+  "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/Sources/M4BtoMP3/Converter.swift": {
+    "dependencies": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/Converter.d",
+    "object": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/Converter.swift.o",
+    "swiftmodule": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/Converter~partial.swiftmodule",
+    "swift-dependencies": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/Converter.swiftdeps",
+    "diagnostics": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/Converter.dia"
+  },
+  "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/Sources/M4BtoMP3/M4BtoMP3App.swift": {
+    "dependencies": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/M4BtoMP3App.d",
+    "object": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/M4BtoMP3App.swift.o",
+    "swiftmodule": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/M4BtoMP3App~partial.swiftmodule",
+    "swift-dependencies": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/M4BtoMP3App.swiftdeps",
+    "diagnostics": "/Users/chrisbillingham/local_code/convert-m4b-to-mp3/swift/.build/arm64-apple-macosx/debug/M4BtoMP3.build/M4BtoMP3App.dia"
+  }
+}
