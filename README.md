@@ -6,7 +6,7 @@ Converts `.m4b` (and `.m4a`) audiobook files into chapter-split `.mp3` files wit
 
 | Implementation | Stack | Location |
 |---|---|---|
-| **Python** | tkinter (stdlib GUI) | [`m4b_to_mp3.py`](./m4b_to_mp3.py) |
+| **Python** | tkinter (stdlib GUI) | [`python/`](./python/) |
 | **Rust** | egui / eframe | [`rust/`](./rust/) |
 | **Swift** | SwiftUI | [`swift/`](./swift/) |
 | **R** | Shiny (browser UI) | [`r/`](./r/) |
@@ -37,12 +37,14 @@ Additional requirements per implementation:
 **Python:**
 
 ```bash
+cd python
 python3 m4b_to_mp3.py
 ```
 
 Or with [uv](https://docs.astral.sh/uv/) (no virtual environment setup needed):
 
 ```bash
+cd python
 uv run m4b_to_mp3.py
 ```
 
@@ -60,10 +62,11 @@ cd swift
 open Package.swift   # then Cmd+R in Xcode
 ```
 
-Or from the command line:
+Or build and run as an app bundle from the command line:
 
 ```bash
-swift run
+cd swift
+./build.sh && open M4BtoMP3.app
 ```
 
 **R:**

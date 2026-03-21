@@ -31,23 +31,14 @@ A native macOS GUI app that converts `.m4b` (and `.m4a`) audiobook files into ch
 
 > **Note:** In Xcode's build settings, ensure **App Sandbox** is set to **No** (it should be by default for a Swift Package target). Sandboxing prevents the app from spawning ffmpeg as a child process.
 
-### Option B — Command line
+### Option B — Command line (app bundle)
+
+SwiftUI apps require a proper `.app` bundle to get a window server connection — running the raw binary directly from the terminal produces no window. Use the provided build script, which compiles the binary and packages it correctly:
 
 ```bash
 cd swift
-swift run
-```
-
-To build an optimised binary:
-
-```bash
-swift build -c release
-```
-
-The binary lands at `.build/release/M4BtoMP3`. Run it directly:
-
-```bash
-.build/release/M4BtoMP3
+./build.sh
+open M4BtoMP3.app
 ```
 
 ## Features
@@ -83,12 +74,37 @@ Metadata from the source file (artist, album, etc.) is passed through to each MP
 ```
 swift/
 ├── Package.swift
+├── Info.plist              # App bundle metadata (required for window server)
+├── build.sh                # Compiles and packages into M4BtoMP3.app
+├── icon_generator.swift    # Generates icon_1024.png (run once to regenerate)
+├── AppIcon.icns            # App icon (pre-built — used by build.sh)
 ├── README.md
 └── Sources/
     └── M4BtoMP3/
-        ├── M4BtoMP3App.swift   # App entry point (@main)
+        ├── M4BtoMP3App.swift   # App entry point (@main), About panel
         ├── ContentView.swift   # SwiftUI UI
         └── Converter.swift     # ffprobe/ffmpeg logic, ObservableObject state
+```
+
+## Regenerating the Icon
+
+The icon is pre-built as `AppIcon.icns`. To regenerate it from source:
+
+```bash
+cd swift
+swift icon_generator.swift          # produces icon_1024.png
+mkdir -p AppIcon.iconset
+sips -z 16 16     icon_1024.png --out AppIcon.iconset/icon_16x16.png
+sips -z 32 32     icon_1024.png --out AppIcon.iconset/icon_16x16@2x.png
+sips -z 32 32     icon_1024.png --out AppIcon.iconset/icon_32x32.png
+sips -z 64 64     icon_1024.png --out AppIcon.iconset/icon_32x32@2x.png
+sips -z 128 128   icon_1024.png --out AppIcon.iconset/icon_128x128.png
+sips -z 256 256   icon_1024.png --out AppIcon.iconset/icon_128x128@2x.png
+sips -z 256 256   icon_1024.png --out AppIcon.iconset/icon_256x256.png
+sips -z 512 512   icon_1024.png --out AppIcon.iconset/icon_256x256@2x.png
+sips -z 512 512   icon_1024.png --out AppIcon.iconset/icon_512x512.png
+cp icon_1024.png AppIcon.iconset/icon_512x512@2x.png
+iconutil -c icns AppIcon.iconset -o AppIcon.icns
 ```
 
 ## Requirements
